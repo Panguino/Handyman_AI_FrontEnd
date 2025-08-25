@@ -1,7 +1,70 @@
-html, body {
+html,
+body {
   padding: 0;
   margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+}
+
+:root {
+  --bg: #ffffff;
+  --fg: #0b1220;
+  --muted: #6b7280;
+  --surface: #f5f7fb;
+  --border: #e5e7eb;
+  --primary: #2563eb;
+  --primary-contrast: #ffffff;
+  --bubble-user: #e6f2ff;
+  --bubble-assistant: #f8fafc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1021;
+    --fg: #e5e7eb;
+    --muted: #9aa3b2;
+    --surface: #101632;
+    --border: #1f2937;
+    --primary: #3b82f6;
+    --primary-contrast: #0b1021;
+    --bubble-user: #13203d; /* subtle blue-tinted surface */
+    --bubble-assistant: #0f172a;
+  }
+}
+
+/* Manual override via data-theme attribute */
+:root[data-theme='light'] {
+  --bg: #ffffff;
+  --fg: #0b1220;
+  --muted: #6b7280;
+  --surface: #f5f7fb;
+  --border: #e5e7eb;
+  --primary: #2563eb;
+  --primary-contrast: #ffffff;
+  --bubble-user: #e6f2ff;
+  --bubble-assistant: #f8fafc;
+}
+:root[data-theme='dark'] {
+  --bg: #0b1021;
+  --fg: #e5e7eb;
+  --muted: #9aa3b2;
+  --surface: #101632;
+  --border: #1f2937;
+  --primary: #3b82f6;
+  --primary-contrast: #0b1021;
+  --bubble-user: #13203d;
+  --bubble-assistant: #0f172a;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
 }
 
 main {
@@ -9,3 +72,49 @@ main {
   margin: 0 auto;
 }
 
+/* Components using variables */
+header,
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  color: var(--fg);
+}
+.user {
+  background: var(--bubble-user);
+  color: var(--fg);
+}
+.assistant {
+  background: var(--bubble-assistant);
+  color: var(--fg);
+}
+.typing {
+  background: var(--bubble-assistant);
+}
+.input {
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+}
+.button {
+  background: var(--primary);
+  color: var(--primary-contrast);
+}
+.buttonSecondary {
+  color: var(--fg);
+  border: 1px solid var(--border);
+}
+.note {
+  color: var(--muted);
+}
+.input {
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+}
+.buttonSecondary {
+  color: var(--fg);
+  border: 1px solid var(--border);
+}
+.note {
+  color: var(--muted);
+}

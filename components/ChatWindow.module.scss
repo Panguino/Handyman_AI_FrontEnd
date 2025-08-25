@@ -1,0 +1,205 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 80px);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--fg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.messages {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+}
+.actionsBar {
+    display: flex;
+    gap: 8px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+}
+.actionButton {
+    padding: 8px 10px;
+    background: var(--primary);
+    color: var(--primary-contrast);
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.row {
+    margin-bottom: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+}
+.rowAssistant {
+    justify-content: flex-start;
+}
+.rowCustomer {
+    justify-content: flex-start; /* with row-reverse, flex-start pins to the right */
+    flex-direction: row-reverse;
+}
+.avatar {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 12px;
+    color: #fff;
+    user-select: none;
+    flex: 0 0 28px; /* do not shrink */
+}
+.avatarAI {
+    background: #111827;
+}
+.avatarYou {
+    background: #2563eb;
+}
+.typing {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--bubble-assistant);
+    border-radius: 12px;
+    padding: 10px 12px;
+}
+.dot {
+    width: 6px;
+    height: 6px;
+    background: #94a3b8;
+    border-radius: 50%;
+    animation: blink 1.4s infinite both;
+}
+.dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+.dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+@keyframes blink {
+    0% {
+        opacity: 0.2;
+    }
+    20% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.2;
+    }
+}
+.user {
+    background: var(--bubble-user);
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: inline-block;
+    max-width: 75%;
+    flex: 0 1 auto;
+    text-align: right;
+    color: var(--fg);
+}
+.assistant {
+    background: var(--bubble-assistant);
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: inline-block;
+    max-width: 75%;
+    flex: 0 1 auto;
+    color: var(--fg);
+}
+.assistant :global(h1),
+.assistant :global(h2),
+.assistant :global(h3) {
+    margin: 8px 0 6px;
+    font-weight: 600;
+}
+.assistant :global(ul) {
+    margin: 6px 0 6px 18px;
+    list-style: disc;
+}
+.assistant :global(ol) {
+    margin: 6px 0 6px 18px;
+    list-style: decimal;
+}
+.assistant :global(p) {
+    margin: 6px 0;
+    line-height: 1.5;
+}
+.assistant :global(code) {
+    background: #eef2f7;
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+.assistant :global(pre) {
+    background: #0b1021;
+    color: #e5e7eb;
+    padding: 10px;
+    border-radius: 8px;
+    overflow-x: auto;
+}
+.image {
+    max-width: 320px;
+    max-height: 240px;
+    border-radius: 8px;
+    display: block;
+    flex: 0 1 auto; /* don't stretch; wrap nicely */
+}
+.composer {
+    border-top: 1px solid var(--border);
+    padding: 12px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--fg);
+    border-radius: 8px;
+}
+.button {
+    padding: 10px 14px;
+    background: #111827;
+    color: white;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.buttonSecondary {
+    padding: 8px 10px;
+    background: transparent;
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.themeToggle {
+    padding: 6px 8px;
+    background: transparent;
+    color: var(--fg);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.note {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 8px;
+}
