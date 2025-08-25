@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  CUSTOMER
+}
+
+enum ConversationStatus {
+  ACTIVE
+  COMPLETED
+  BOOKED
+}
+
+enum MessageSender {
+  CUSTOMER
+  ASSISTANT
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  role      Role
+  name      String?
+  email     String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Conversation {
+  id         String             @id @default(cuid())
+  customerId String?
+  status     ConversationStatus @default(ACTIVE)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  messages   Message[]
+  summaries  EstimateSummary[]
+  booking    Booking?
+
+  @@index([customerId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  conversationId String
+  sender         MessageSender
+  type           MessageType
+  text           String?
+  asset          Asset?       @relation(fields: [assetId], references: [id])
+  assetId        String?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+}
+
+model Asset {
+  id        String   @id @default(cuid())
+  url       String
+  mimeType  String
+  sizeBytes Int
+  createdAt DateTime @default(now())
+  messages  Message[]
+}
+
+model EstimateSummary {
+  id                     String       @id @default(cuid())
+  conversation          Conversation @relation(fields: [conversationId], references: [id])
+  conversationId        String
+  version               Int
+  scope                 Json?
+  timeEstimateMinHours  Float
+  timeEstimateMaxHours  Float
+  materials             Json?
+  priceRangeMin         Int
+  priceRangeMax         Int
+  risks                 Json?
+  assumptions           Json?
+  disclaimer            String?
+  createdAt             DateTime     @default(now())
+
+  @@unique([conversationId, version])
+  @@index([conversationId])
+}
+
+model Booking {
+  id             String         @id @default(cuid())
+  conversation   Conversation   @relation(fields: [conversationId], references: [id])
+  conversationId String         @unique
+  googleEventId  String?
+  start          DateTime
+  end            DateTime
+  status         BookingStatus  @default(PENDING)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([conversationId])
+}
+
+model WebhookEvent {
+  id          String    @id @default(cuid())
+  source      String
+  eventType   String
+  payload     Json
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+}
+

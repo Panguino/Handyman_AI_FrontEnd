@@ -1,0 +1,35 @@
+{
+  "name": "troutman-handyman-ai",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": "20.x"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "postinstall": "prisma generate",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.873.0",
+    "@prisma/client": "^6.14.0",
+    "googleapis": "^157.0.0",
+    "next": "^15.5.0",
+    "next-auth": "^4.24.11",
+    "openai": "^5.15.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "sass": "^1.90.0"
+  },
+  "devDependencies": {
+    "prisma": "^6.14.0"
+  }
+}
