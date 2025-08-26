@@ -18,6 +18,18 @@ enum ConversationStatus {
   BOOKED
 }
 
+enum ConversationStage {
+  DEFINITION
+  RECAP_PENDING
+  RECAP_CONFIRMED
+  READY_FOR_QUOTING
+  QUOTING
+  APPROVED
+  BOOKING
+  SCHEDULED
+  COMPLETED
+}
+
 enum MessageSender {
   CUSTOMER
   HANDYMAN
@@ -52,6 +64,14 @@ model Conversation {
   id         String             @id @default(cuid())
   customerId String?
   status     ConversationStatus @default(ACTIVE)
+  stage      ConversationStage  @default(DEFINITION)
+  recapText  String?
+  recapConfirmedAt DateTime?
+  contactRequestedAt DateTime?
+  customerName   String?
+  customerEmail  String?
+  customerPhone  String?
+  customerAddress String?
   createdAt  DateTime           @default(now())
   updatedAt  DateTime           @updatedAt
   messages   Message[]
@@ -84,11 +104,18 @@ model Asset {
   messages  Message[]
 }
 
+enum EstimateStatus {
+  DRAFT
+  APPROVED
+  SENT
+}
+
 model EstimateSummary {
   id                     String       @id @default(cuid())
   conversation          Conversation @relation(fields: [conversationId], references: [id])
   conversationId        String
   version               Int
+  status                EstimateStatus @default(DRAFT)
   scope                 Json?
   timeEstimateMinHours  Float
   timeEstimateMaxHours  Float
@@ -99,6 +126,8 @@ model EstimateSummary {
   assumptions           Json?
   disclaimer            String?
   createdAt             DateTime     @default(now())
+  approvedAt            DateTime?
+  sentAt                DateTime?
 
   @@unique([conversationId, version])
   @@index([conversationId])

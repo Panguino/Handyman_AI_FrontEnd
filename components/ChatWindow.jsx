@@ -1,10 +1,19 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { getTheme, setTheme } from '@/lib/ui/theme';
+const HANDYMAN_NAME = process.env.NEXT_PUBLIC_HANDYMAN_NAME || 'Handyman';
+const HANDYMAN_INITIALS = HANDYMAN_NAME.split(' ')
+  .filter(Boolean)
+  .map((w) => w[0])
+  .join('')
+  .slice(0, 2)
+  .toUpperCase();
 
 import styles from './ChatWindow.module.scss';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import StageTimeline from './StageTimeline';
+import ContactCapture from './ContactCapture';
 
 export default function ChatWindow() {
   const [messages, setMessages] = useState([]);
@@ -12,6 +21,7 @@ export default function ChatWindow() {
   const [busy, setBusy] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
   const [lastError, setLastError] = useState('');
+  const [autoScroll, setAutoScroll] = useState(true);
   const fileRef = useRef(null);
   const listRef = useRef(null);
 
@@ -102,11 +112,35 @@ export default function ChatWindow() {
         .then((data) => setMessages(data.messages || []))
         .catch(() => {});
     });
-  }, []);
+    // start polling for new messages and conversation stage
+    const t = setInterval(() => {
+      if (busy) return; // avoid clobbering active streams
+      fetch('/api/messages')
+        .then((r) => r.json())
+        .then((data) => Array.isArray(data.messages) && setMessages(data.messages))
+        .catch(() => {});
+      fetch('/api/conversations')
+        .then((r) => r.json())
+        .then((d) => setConversation(d?.conversation || null))
+        .catch(() => {});
+    }, 2500);
+    return () => clearInterval(t);
+  }, [busy]);
 
   useEffect(() => {
-    listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
-  }, [messages]);
+    const el = listRef.current;
+    if (!el) return;
+    if (autoScroll || busy) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [messages, autoScroll, busy]);
+
+  function handleScroll() {
+    const el = listRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 80;
+    setAutoScroll(nearBottom);
+  }
 
   async function sendText() {
     if (!input.trim()) return;
@@ -169,6 +203,17 @@ export default function ChatWindow() {
     }
   }
 
+  const answeredCount = messages.filter((m) => m.sender === 'CUSTOMER' && m.type === 'TEXT' && (m.text || '').trim()).length;
+  const canSuggestRecap = answeredCount >= 3 && !busy;
+  const [conversation, setConversation] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/conversations')
+      .then((r) => r.json())
+      .then((d) => setConversation(d?.conversation || null))
+      .catch(() => {});
+  }, []);
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -177,12 +222,14 @@ export default function ChatWindow() {
           {lastError ? <span style={{ color: '#b91c1c', marginLeft: 8, fontSize: 12 }}>Error: {lastError}</span> : null}
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className={styles.actionButton} onClick={() => sendQuick('Ready to schedule / can I get a recap?')} disabled={busy}>
-            Ready to schedule / recap
-          </button>
           <button className={styles.actionButton} onClick={() => sendQuick('Could you give me DIY guidance to fix this myself?')} disabled={busy}>
             DIY advice
           </button>
+          {canSuggestRecap && (
+            <button className={styles.actionButton} onClick={() => sendQuick('recap')} disabled={busy}>
+              Request recap
+            </button>
+          )}
           <button className={styles.actionButton} onClick={resetChat} disabled={busy}>
             Reset
           </button>
@@ -201,15 +248,34 @@ export default function ChatWindow() {
           </button>
         </div>
       </div>
-      <div className={styles.messages} ref={listRef}>
+      <div style={{ margin: '8px 0' }}>
+        <StageTimeline stage={conversation?.stage} />
+      </div>
+      {conversation?.stage === 'RECAP_CONFIRMED' &&
+      (!conversation?.customerName || !(conversation?.customerEmail || conversation?.customerPhone) || !conversation?.customerAddress) ? (
+        <ContactCapture
+          conversationId={conversation?.id}
+          onSaved={() => {
+            fetch('/api/conversations')
+              .then((r) => r.json())
+              .then((d) => setConversation(d?.conversation || null))
+              .catch(() => {});
+          }}
+        />
+      ) : null}
+      <div className={styles.messages} ref={listRef} onScroll={handleScroll}>
         {messages.map((m, i) => (
           <div key={i} className={`${styles.row} ${m.sender === 'CUSTOMER' ? styles.rowCustomer : styles.rowAssistant}`}>
-            <div
-              className={`${styles.avatar} ${
-                m.sender === 'CUSTOMER' ? styles.avatarYou : m.sender === 'HANDYMAN' ? styles.avatarPro : styles.avatarAI
-              }`}
-            >
-              {m.sender === 'CUSTOMER' ? 'You' : m.sender === 'HANDYMAN' ? '🧰' : 'AI'}
+            <div className={styles.avatarWrap}>
+              <div
+                className={`${styles.avatar} ${
+                  m.sender === 'CUSTOMER' ? styles.avatarYou : m.sender === 'HANDYMAN' ? styles.avatarPro : styles.avatarAI
+                }`}
+                title={m.sender === 'HANDYMAN' ? HANDYMAN_NAME : undefined}
+              >
+                {m.sender === 'CUSTOMER' ? 'You' : m.sender === 'HANDYMAN' ? HANDYMAN_INITIALS : 'AI'}
+              </div>
+              <div className={styles.hoverCard}>{m.sender === 'HANDYMAN' ? `${HANDYMAN_NAME} · Handyman` : 'Customer'}</div>
             </div>
             {m.type === 'TEXT' ? (
               m.sender === 'CUSTOMER' ? (
@@ -250,7 +316,7 @@ export default function ChatWindow() {
         <button className={styles.button} onClick={() => fileRef.current?.click()} disabled={busy}>
           Upload
         </button>
-        <button className={styles.button} onClick={sendText} disabled={busy}>
+        <button className={styles.button} onClick={sendText} disabled={busy || conversation?.stage === 'READY_FOR_QUOTING'}>
           Send
         </button>
       </div>

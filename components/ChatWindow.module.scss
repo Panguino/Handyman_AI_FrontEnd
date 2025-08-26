@@ -72,6 +72,31 @@
 .avatarPro {
     background: #b45309; /* amber-700 */
 }
+.avatarCustomer {
+    background: #10b981; /* emerald-500 */
+}
+.avatarWrap {
+    position: relative;
+}
+.hoverCard {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    transform: translateY(-6px);
+    background: var(--surface);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 12px;
+    white-space: nowrap;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+.avatarWrap:hover .hoverCard {
+    display: block;
+}
 .typing {
     display: inline-flex;
     align-items: center;

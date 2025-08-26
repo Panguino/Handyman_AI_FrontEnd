@@ -1,6 +1,9 @@
 import prisma from '@/lib/db/prisma';
 import { headers } from 'next/headers';
+import { revalidatePath } from 'next/cache';
 import { baseUrl } from '@/lib/utils/env';
+import AdminChatWindow from '@/components/AdminChatWindow';
+import StageTimeline from '@/components/StageTimeline';
 
 export default async function ConversationDetail({ params }) {
   const h = await headers();
@@ -17,51 +20,116 @@ export default async function ConversationDetail({ params }) {
     );
   }
 
-  const convo = await prisma.conversation.findUnique({ where: { id: params.id } });
-  const messages = await prisma.message.findMany({ where: { conversationId: params.id }, orderBy: { createdAt: 'asc' } });
+  const p = await params;
+  const id = p.id;
+  const convo = await prisma.conversation.findUnique({ where: { id } });
+  const latestDraft = await prisma.estimateSummary.findFirst({ where: { conversationId: id }, orderBy: { version: 'desc' } });
 
-  async function sendHandyman(formData) {
+  async function updateStage(nextStage) {
     'use server';
-    const text = formData.get('text');
-    if (!text) return;
-    await fetch(`${process.env.VERCEL_URL || ''}/api/messages`, {
-      method: 'POST',
+    await fetch(`${baseUrl()}/api/conversations`, {
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      // Cookies/session are sent by server automatically
-      body: JSON.stringify({ text, sender: 'HANDYMAN' }),
+      body: JSON.stringify({ id, stage: nextStage }),
     });
+    revalidatePath(`/admin/conversations/${id}`);
   }
 
   return (
     <div>
-      <h2>Conversation {params.id}</h2>
-      <div style={{ border: '1px solid #e5e7eb', padding: 16, borderRadius: 8, marginBottom: 16 }}>
-        {messages.map((m) => (
-          <div key={m.id}>
-            <strong>{m.sender}:</strong> {m.text || m.assetId}
-          </div>
-        ))}
+      <div style={{ margin: '8px 0' }}>
+        <a href='/admin' style={{ color: 'var(--fg)' }}>
+          &larr; Back to conversations
+        </a>
       </div>
-      <form action={sendHandyman}>
-        <input type='text' name='text' placeholder='Reply as Handyman…' style={{ padding: 8, width: 320 }} />
-        <button type='submit' style={{ marginLeft: 8 }}>
-          Send
-        </button>
-      </form>
-      <div style={{ marginTop: 12 }}>
-        <form
-          action={async () => {
-            'use server';
-            await fetch(`${process.env.VERCEL_URL || ''}/api/chat`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ content: 'Please continue assisting with the next best question or a concise recap.' }),
-            });
-          }}
-        >
-          <button type='submit'>Ask AI</button>
-        </form>
+      <div style={{ margin: '8px 0' }}>
+        <StageTimeline stage={convo?.stage} />
       </div>
+      {convo?.stage === 'READY_FOR_QUOTING' && (
+        <div style={{ margin: '8px 0', display: 'flex', gap: 8 }}>
+          <form action={async () => updateStage('QUOTING')}>
+            <button type='submit'>Approve and move to QUOTING</button>
+          </form>
+          <form action={async () => updateStage('RECAP_PENDING')}>
+            <button type='submit'>Send back for changes</button>
+          </form>
+        </div>
+      )}
+      {convo?.stage === 'QUOTING' && (
+        <div style={{ margin: '8px 0', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <form
+            action={async () => {
+              'use server';
+              await fetch(`${baseUrl()}/api/estimates`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ conversationId: id }),
+              });
+              revalidatePath(`/admin/conversations/${id}`);
+            }}
+          >
+            <button type='submit'>Generate draft estimate</button>
+          </form>
+          {latestDraft && (
+            <>
+              <form
+                action={async (formData) => {
+                  'use server';
+                  const payload = {
+                    id: formData.get('id'),
+                    timeEstimateMinHours: Number(formData.get('tMin') || 0),
+                    timeEstimateMaxHours: Number(formData.get('tMax') || 0),
+                    priceRangeMin: Number(formData.get('pMin') || 0),
+                    priceRangeMax: Number(formData.get('pMax') || 0),
+                    disclaimer: formData.get('disclaimer') || '',
+                  };
+                  await fetch(`${baseUrl()}/api/estimates`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                  });
+                  revalidatePath(`/admin/conversations/${id}`);
+                }}
+                style={{ display: 'flex', gap: 8, alignItems: 'center' }}
+              >
+                <input type='hidden' name='id' defaultValue={latestDraft.id} />
+                <label>
+                  Time (min)
+                  <input type='number' name='tMin' defaultValue={latestDraft.timeEstimateMinHours || 0} style={{ width: 80, marginLeft: 4 }} />
+                </label>
+                <label>
+                  Time (max)
+                  <input type='number' name='tMax' defaultValue={latestDraft.timeEstimateMaxHours || 0} style={{ width: 80, marginLeft: 4 }} />
+                </label>
+                <label>
+                  Price (min)
+                  <input type='number' name='pMin' defaultValue={latestDraft.priceRangeMin || 0} style={{ width: 100, marginLeft: 4 }} />
+                </label>
+                <label>
+                  Price (max)
+                  <input type='number' name='pMax' defaultValue={latestDraft.priceRangeMax || 0} style={{ width: 100, marginLeft: 4 }} />
+                </label>
+                <input name='disclaimer' placeholder='Disclaimer' defaultValue={latestDraft.disclaimer || ''} style={{ width: 260 }} />
+                <button type='submit'>Save draft</button>
+              </form>
+              <form
+                action={async () => {
+                  'use server';
+                  await fetch(`${baseUrl()}/api/estimates`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: latestDraft.id, status: 'SENT' }),
+                  });
+                  revalidatePath(`/admin/conversations/${id}`);
+                }}
+              >
+                <button type='submit'>Send draft to customer</button>
+              </form>
+            </>
+          )}
+        </div>
+      )}
+      <AdminChatWindow conversationId={id} />
     </div>
   );
 }
