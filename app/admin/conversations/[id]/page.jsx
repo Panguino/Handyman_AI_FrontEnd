@@ -1,9 +1,12 @@
 import prisma from '@/lib/db/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { headers } from 'next/headers';
+import { baseUrl } from '@/lib/utils/env';
 
 export default async function ConversationDetail({ params }) {
-  const session = await getServerSession(authOptions);
+  const h = await headers();
+  const cookie = h.get('cookie') || '';
+  const res = await fetch(`${baseUrl()}/api/auth/session`, { cache: 'no-store', headers: { cookie } });
+  const session = res.ok ? await res.json() : null;
   const allowed = !!(session?.user?.email && process.env.OWNER_EMAIL && session.user.email === process.env.OWNER_EMAIL);
   if (!allowed) {
     return (
