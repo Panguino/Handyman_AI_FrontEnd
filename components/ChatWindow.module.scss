@@ -67,7 +67,10 @@
     background: #111827;
 }
 .avatarYou {
-    background: #2563eb;
+    background: var(--primary);
+}
+.avatarPro {
+    background: #b45309; /* amber-700 */
 }
 .typing {
     display: inline-flex;

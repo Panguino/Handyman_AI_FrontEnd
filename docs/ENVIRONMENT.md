@@ -7,7 +7,7 @@ Create a .env.local in the project root based on .env.example. Never commit secr
 ## App and Auth
 
 - NODE_ENV: development | production
-- NEXTAUTH_URL: Base URL for NextAuth callbacks, e.g., http://localhost:3000 in dev
+- VERCEL_URL: Base URL for NextAuth callbacks, e.g., http://localhost:3000 in dev
 - NEXTAUTH_SECRET: Long, random string (openssl rand -base64 32)
 
 ## Database (Neon + Prisma)

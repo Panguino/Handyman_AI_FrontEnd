@@ -204,8 +204,12 @@ export default function ChatWindow() {
       <div className={styles.messages} ref={listRef}>
         {messages.map((m, i) => (
           <div key={i} className={`${styles.row} ${m.sender === 'CUSTOMER' ? styles.rowCustomer : styles.rowAssistant}`}>
-            <div className={`${styles.avatar} ${m.sender === 'CUSTOMER' ? styles.avatarYou : styles.avatarAI}`}>
-              {m.sender === 'CUSTOMER' ? 'You' : 'AI'}
+            <div
+              className={`${styles.avatar} ${
+                m.sender === 'CUSTOMER' ? styles.avatarYou : m.sender === 'HANDYMAN' ? styles.avatarPro : styles.avatarAI
+              }`}
+            >
+              {m.sender === 'CUSTOMER' ? 'You' : m.sender === 'HANDYMAN' ? '🧰' : 'AI'}
             </div>
             {m.type === 'TEXT' ? (
               m.sender === 'CUSTOMER' ? (
