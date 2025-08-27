@@ -109,7 +109,14 @@ export default function ChatWindow() {
       // load history once session is ready
       fetch('/api/messages')
         .then((r) => r.json())
-        .then((data) => setMessages(data.messages || []))
+        .then((data) =>
+          setMessages((prev) => {
+            const typing = prev[prev.length - 1];
+            const keepTyping = typing && typing.sender === 'ASSISTANT' && typing.type === 'TYPING';
+            const base = Array.isArray(data.messages) ? data.messages : [];
+            return keepTyping ? [...base, typing] : base;
+          })
+        )
         .catch(() => {});
     });
     // start polling for new messages and conversation stage
@@ -117,7 +124,14 @@ export default function ChatWindow() {
       if (busy) return; // avoid clobbering active streams
       fetch('/api/messages')
         .then((r) => r.json())
-        .then((data) => Array.isArray(data.messages) && setMessages(data.messages))
+        .then((data) =>
+          setMessages((prev) => {
+            const typing = prev[prev.length - 1];
+            const keepTyping = typing && typing.sender === 'ASSISTANT' && typing.type === 'TYPING';
+            const base = Array.isArray(data.messages) ? data.messages : [];
+            return keepTyping ? [...base, typing] : base;
+          })
+        )
         .catch(() => {});
       fetch('/api/conversations')
         .then((r) => r.json())

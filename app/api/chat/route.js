@@ -13,6 +13,8 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const { content } = body || {};
+    const lower = (content || '').toLowerCase().trim();
+    const wantsRecap = lower === 'recap' || lower.startsWith('recap ');
     if (!content || typeof content !== 'string') {
       return new Response(JSON.stringify({ error: 'content is required' }), { status: 400 });
     }
@@ -31,11 +33,16 @@ export async function POST(request) {
     // Read conversation and history
     const convo = await prisma.conversation.findUnique({ where: { id: conversationId } });
 
+    // If user explicitly requests a recap, move to RECAP_PENDING and steer the model
+    if (wantsRecap && (convo?.stage === 'DEFINITION' || convo?.stage === 'RECAP_PENDING')) {
+      await prisma.conversation.update({ where: { id: conversationId }, data: { stage: 'RECAP_PENDING' } });
+    }
+
     // Handle stage transitions and gating
     // If user affirms recap, mark recap confirmed and request contact
     if ((convo?.stage === 'RECAP_PENDING' || convo?.stage === 'DEFINITION') && isAffirmation(content)) {
       const msg =
-        'Great! I’ll lock in that summary. Next, please share your contact info so we can prepare your estimate: full name, a phone number for texts, your email, and the service address.';
+        'Great! I’ll lock in that summary. Next, please share your contact info so we can prepare your estimate: full name, a phone number for texts, your email, and the service address. After that, our handyman will review and approve next steps before any estimate is shared.';
       await prisma.conversation.update({
         where: { id: conversationId },
         data: { stage: 'RECAP_CONFIRMED', recapConfirmedAt: new Date(), contactRequestedAt: new Date() },
@@ -68,6 +75,11 @@ export async function POST(request) {
     if (!convo || ['DEFINITION', 'RECAP_PENDING', 'RECAP_CONFIRMED', 'READY_FOR_QUOTING', 'QUOTING'].includes(convo.stage)) {
       guards.push(
         'Policy: Do NOT provide any numeric prices, totals, or ranges (no currency amounts) until the owner approves. Focus on questions, recap, or contact collection as appropriate.'
+      );
+    }
+    if (wantsRecap) {
+      guards.push(
+        'User requested a recap: produce a concise bullet-list recap and ask “Does that look right? Reply yes to confirm.” Do not include prices.'
       );
     }
     if (convo?.stage === 'RECAP_CONFIRMED') {
